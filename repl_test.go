@@ -18,6 +18,9 @@ func TestCleanInput(t *testing.T) {
 
 	for _, c := range cases {
 		actual := cleanInput(c.input)
+		if len(actual) != len(c.expected) {
+			t.Errorf("Expected %d words, got %d", len(c.expected), len(actual))
+		}
 		for i := range actual {
 			word := actual[i]
 			expectedWord := c.expected[i]
