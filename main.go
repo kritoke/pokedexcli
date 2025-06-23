@@ -81,7 +81,9 @@ func fetchAndDisplayLocations(cfg *config, forward bool) error {
 	if err != nil {
 		return err
 	}
-	defer res.Body.Close()
+	defer func() {
+		_ = res.Body.Close() // Explicitly ignore the error
+	}()
 
 	if res.StatusCode > 299 {
 		return fmt.Errorf("HTTP error: %d", res.StatusCode)
