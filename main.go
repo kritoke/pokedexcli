@@ -49,7 +49,9 @@ func commandHelp(cfg *config) error {
 	return nil
 }
 
-func commandMap(cfg *config) error {
+func fetchAndDisplayLocations(cfg *config, forward bool) error {
+	var url string
+
 	type Location struct {
 		Count    int    `json:"count"`
 		Next     string `json:"next"`
@@ -60,16 +62,32 @@ func commandMap(cfg *config) error {
 		} `json:"results"`
 	}
 
-	res, err := http.Get("https://pokeapi.co/api/v2/location-area/")
+	if forward {
+		if cfg.Next != nil {
+			url = *cfg.Next
+		} else {
+			url = "https://pokeapi.co/api/v2/location-area/"
+		}
+	} else {
+		if cfg.Previous != nil {
+			url = *cfg.Previous
+		} else {
+			fmt.Println("No previous locations, you are on the first page")
+			return nil
+		}
+	}
+
+	res, err := http.Get(url)
 	if err != nil {
 		return err
 	}
+	defer res.Body.Close()
 
-	jsonData, err := io.ReadAll(res.Body)
-	res.Body.Close()
 	if res.StatusCode > 299 {
 		return fmt.Errorf("HTTP error: %d", res.StatusCode)
 	}
+
+	jsonData, err := io.ReadAll(res.Body)
 	if err != nil {
 		return err
 	}
@@ -84,7 +102,18 @@ func commandMap(cfg *config) error {
 		fmt.Println(string(location.Name))
 	}
 
+	cfg.Next = &locations.Next
+	cfg.Previous = &locations.Previous
+
 	return nil
+}
+
+func commandMap(cfg *config) error {
+	return fetchAndDisplayLocations(cfg, true)
+}
+
+func commandMapb(cfg *config) error {
+	return fetchAndDisplayLocations(cfg, false)
 }
 
 func main() {
@@ -109,7 +138,7 @@ func main() {
 		"mapb": {
 			name:        "mapb",
 			description: "Displays a map of the previous Pokemon locations",
-			callback:    commandMap,
+			callback:    commandMapb,
 		},
 	}
 
