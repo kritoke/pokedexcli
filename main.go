@@ -14,18 +14,23 @@ import (
 type cliCommand struct {
 	name        string
 	description string
-	callback    func() error
+	callback    func(*config) error
+}
+
+type config struct {
+	Next     *string
+	Previous *string
 }
 
 var commands map[string]cliCommand
 
-func commandExit() error {
+func commandExit(cfg *config) error {
 	fmt.Println("Closing the Pokedex... Goodbye!")
 	os.Exit(0)
 	return nil
 }
 
-func commandHelp() error {
+func commandHelp(cfg *config) error {
 	fmt.Println("Welcome to the Pokedex!")
 	fmt.Println("Usage:")
 	fmt.Println("")
@@ -44,7 +49,7 @@ func commandHelp() error {
 	return nil
 }
 
-func commandMap() error {
+func commandMap(cfg *config) error {
 	type Location struct {
 		Count    int    `json:"count"`
 		Next     string `json:"next"`
@@ -83,6 +88,8 @@ func commandMap() error {
 }
 
 func main() {
+	cfg := &config{}
+
 	commands = map[string]cliCommand{
 		"exit": {
 			name:        "exit",
@@ -96,7 +103,12 @@ func main() {
 		},
 		"map": {
 			name:        "map",
-			description: "Displays a map of the Pokemon",
+			description: "Displays a map of the Pokemon locations",
+			callback:    commandMap,
+		},
+		"mapb": {
+			name:        "mapb",
+			description: "Displays a map of the previous Pokemon locations",
 			callback:    commandMap,
 		},
 	}
@@ -114,7 +126,7 @@ func main() {
 		command := input[0]
 
 		if cmd, exists := commands[command]; exists {
-			err := cmd.callback()
+			err := cmd.callback(cfg)
 			if err != nil {
 				fmt.Println(err)
 			}
