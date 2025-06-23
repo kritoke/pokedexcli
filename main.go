@@ -2,7 +2,10 @@ package main
 
 import (
 	"bufio"
+	"encoding/json"
 	"fmt"
+	"io"
+	"net/http"
 	"os"
 	"sort"
 	"strings"
@@ -41,6 +44,44 @@ func commandHelp() error {
 	return nil
 }
 
+func commandMap() error {
+	type Location struct {
+		Count    int    `json:"count"`
+		Next     string `json:"next"`
+		Previous string `json:"previous"`
+		Results  []struct {
+			Name string `json:"name"`
+			URL  string `json:"url"`
+		} `json:"results"`
+	}
+
+	res, err := http.Get("https://pokeapi.co/api/v2/location-area/")
+	if err != nil {
+		return err
+	}
+
+	jsonData, err := io.ReadAll(res.Body)
+	res.Body.Close()
+	if res.StatusCode > 299 {
+		return fmt.Errorf("HTTP error: %d", res.StatusCode)
+	}
+	if err != nil {
+		return err
+	}
+
+	locations := Location{}
+	err = json.Unmarshal(jsonData, &locations)
+	if err != nil {
+		return err
+	}
+
+	for _, location := range locations.Results {
+		fmt.Println(string(location.Name))
+	}
+
+	return nil
+}
+
 func main() {
 	commands = map[string]cliCommand{
 		"exit": {
@@ -52,6 +93,11 @@ func main() {
 			name:        "help",
 			description: "Displays a help message",
 			callback:    commandHelp,
+		},
+		"map": {
+			name:        "map",
+			description: "Displays a map of the Pokemon",
+			callback:    commandMap,
 		},
 	}
 
